@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tagebuch</title>
+    
+    <link rel="manifest" href="manifest.json">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+    
     <style>
         /* HOMESCREEN FARBTHEMA (DARK DESIGN COPIED FROM SCREENSHOT) */
         :root {
@@ -94,7 +102,7 @@
         }
         nav li:active { background-color: var(--bg-color); }
 
-        /* TOAST BENACHRICHTIGUNG MITEINANDER VERBUNDEN */
+        /* TOAST BENACHRICHTIGUNG */
         .toast { 
             position: fixed; 
             bottom: 25px; 
@@ -416,7 +424,6 @@
             const activeTab = document.getElementById(tabId);
             activeTab.classList.add('active');
             
-            // Schließt das Menü flüssig
             const nav = document.getElementById('mainNav');
             nav.classList.remove('active');
             nav.style.opacity = '0';
@@ -429,7 +436,6 @@
             }
         }
 
-        // Flüssige Animation für das Klappfeld
         function toggleResistedField() {
             const suchtGespuestVal = document.getElementById('suchtGespueret').value;
             const group = document.getElementById('resistedGroup');
@@ -544,6 +550,24 @@
                 grid.appendChild(cell);
             }
         }
+
+        // SERVICE WORKER FÜR ECHTE OFFLINE-UNTERSTÜTZUNG (WICHTIG FÜR PWA BUILDER)
+        document.addEventListener("DOMContentLoaded", () => {
+            if(window.location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'tagebuch-v1';
+                    self.addEventListener('install', e => {
+                        e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['index.html', 'manifest.json'])));
+                    });
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+                    });
+                `;
+                const swBlob = new Blob([swCode], {type: 'application/javascript'});
+                const swUrl = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swUrl).catch(() => {});
+            }
+        });
 
         function loadDetailView(dateStr) {
             const entry = JSON.parse(localStorage.getItem('diary_' + dateStr));
